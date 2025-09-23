@@ -1,8 +1,7 @@
 import { createApp } from "./app.js"
 import { createServer} from 'http'
-import dotenv from 'dotenv'
+import config from './config/config.js'
 
-dotenv.config()
 
 process.on('uncaughtException', (err) => {
     console.log("Uncaugh Exception: ", err)
@@ -19,7 +18,7 @@ const startServer = () => {
     try {
         const app = createApp()
         const httpServer = createServer(app)
-        const port = process.env.PORT || 4001
+        const port = config.port || 4001
         httpServer.listen(port, "0.0.0.0", () => {
             console.log(`
                 Server is running

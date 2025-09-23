@@ -4,6 +4,7 @@ import helmet from 'helmet'
 import morgan from 'morgan'
 import cookieParser from 'cookie-parser'
 import dotenv from 'dotenv'
+import config from './config/config.js'
 
 dotenv.config()
 
@@ -20,7 +21,7 @@ export const createApp = () => {
     app.use(express.json({ limit: '10mb'}))
     app.use(cookieParser())
 
-    if(process.env.NODE_ENV === 'development'){
+    if(config.env === 'development'){
         app.use(morgan('dev'))
     }
 
@@ -36,7 +37,7 @@ export const createApp = () => {
         res.status(200).json({
             status:'ok',
             timeStamp: new Date().toISOString(),
-            environment: process.env.NODE_ENV
+            environment: config.env
         })
     })
 
