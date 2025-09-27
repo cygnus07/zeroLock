@@ -1,6 +1,7 @@
 import { createApp } from "./app.js"
 import { createServer} from 'http'
 import config from './config/config.js'
+import logger from "./utils/logger.js"
 
 
 process.on('uncaughtException', (err) => {
@@ -20,7 +21,7 @@ const startServer = () => {
         const httpServer = createServer(app)
         const port = config.port || 4001
         httpServer.listen(port, "0.0.0.0", () => {
-            console.log(`
+            logger.info(`
                 Server is running
                 port: ${port}
                 health check: /health`)

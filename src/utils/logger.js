@@ -2,6 +2,7 @@ import path from 'path'
 import { fileURLToPath } from 'url'
 import winston from 'winston'
 import fs from 'fs'
+import config from '../config/config.js'
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
@@ -80,7 +81,7 @@ if(config.env !== 'development'){
 
 
 const logger = winston.createLogger({
-    level: config.loggin.level,
+    level: config.logging.level,
     levels,
     format: logFormat,
     transports,
