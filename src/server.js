@@ -5,18 +5,19 @@ import logger from "./utils/logger.js"
 
 
 process.on('uncaughtException', (err) => {
-    console.log("Uncaugh Exception: ", err)
+    logger.error("Uncaugh Exception: ", err)
     process.exit(1)
 })
 
 process.on('unhandledRejection', (err) => {
-    console.log('Unhandled Rejection', err)
+    logger.error('Unhandled Rejection', err)
     process.exit(1)
 })
 
 
 const startServer = () => {
     try {
+        logger.info('Starting the api server')
         const app = createApp()
         const httpServer = createServer(app)
         const port = config.port || 4001
@@ -24,18 +25,19 @@ const startServer = () => {
             logger.info(`
                 Server is running
                 port: ${port}
-                health check: /health`)
+                Environment: ${config.env}
+                health check: http://localhost:${port}/health`)
         })
 
         process.on('SIGTERM', () => {
-            console.log('SIGTERM received, shutting down gracefully')
+            logger.info('SIGTERM received, shutting down gracefully')
             httpServer.close(() =>  {
-                console.log('Server closed')
+                logger.info('Server closed')
                 process.exit(0)
             })
         })
     } catch (error) {
-        console.error('Failed to start the server', error)
+        logger.error('Failed to start the server', error)
         process.exit(1)
     }
 }
