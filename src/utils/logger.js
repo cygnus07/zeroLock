@@ -96,13 +96,46 @@ logger.stream = {
 }
 
 
-logger.logRequest = (req, message, meta) => {}
+logger.logRequest = (req, message, meta) => {
+    logger.info(message, {
+        method: req.method,
+        url: req.originalUrl,
+        ip: req.ip,
+        userId: req.user?.id,
+        ...meta
+    })
+}
 
-logger.logError = (error, req=null, message_= 'Error occured') => {}
+logger.logError = (error, req=null, message_= 'Error occured') => {
+    const errorInfo = {
+        message: error.message,
+        stack: error.stack,
+        name: error.name,
+        code: error.code
+    }
 
-logger.logSecurity = (event, details = {}) => {}
+    if(req){
+        errorInfo.request = {
+            method: req.method,
+            url: req.originalUrl,
+            ip: req.ip,
+            userId: req.user?.id,
+        }
+    }
 
-logger.logDatabase  = (operation, details = {}) => {}
+    logger.error(message, errorInfo)
+}
+
+logger.logSecurity = (event, details = {}) => {
+    logger.warn(`SECUIRTY: ${event}`, {
+        timestamp: new Date().toISOString(),
+        ...details,
+    })
+}
+
+logger.logDatabase  = (operation, details = {}) => {
+    logger.debug(`DATABASE: ${operation}`, details)
+}
 
 
 export default logger
