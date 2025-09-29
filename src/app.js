@@ -1,46 +1,53 @@
-import express from 'express'
-import cors from 'cors'
-import helmet from 'helmet'
-import morgan from 'morgan'
-import cookieParser from 'cookie-parser'
-import dotenv from 'dotenv'
-import config from './config/config.js'
+import express from 'express';
+import cors from 'cors';
+import helmet from 'helmet';
+import compression from 'compression';
+import cookieParser from 'cookie-parser';
+import rateLimit from 'express-rate-limit';
 
-dotenv.config()
-
+import { config } from './config/index.js';
+import { errorHandler } from './middleware/errorHandler.js';
+import { requestLogger } from './middleware/requestLogger.js';
+import routes from './routes/index.js';
 
 export const createApp = () => {
-    const app = express()
+  const app = express();
 
-    app.use(cors())
-    app.use(helmet())
-    app.use(express.urlencoded({
-        extended: true,
-        limit: '10mb'
-    }))
-    app.use(express.json({ limit: '10mb'}))
-    app.use(cookieParser())
+  app.use(helmet());
+  app.use(cors(config.cors));
 
-    if(config.env === 'development'){
-        app.use(morgan('dev'))
-    }
+  app.use('/api', rateLimit(config.rateLimit));
 
+  app.use(express.json({ limit: '10mb' }));
+  app.use(express.urlencoded({ 
+    extended: true, 
+    limit: '10mb' 
+  }));
+  app.use(cookieParser());
+  app.use(compression());
 
-    app.get('/', (req,res) => {
-        res.status(200).json({
-            status: 'ok',
-            message: 'Api is running'
-        })    
-    })
+  if (config.env !== 'test') {
+    app.use(requestLogger);
+  }
 
-    app.get('/health', (req,res) => {
-        res.status(200).json({
-            status:'ok',
-            timeStamp: new Date().toISOString(),
-            environment: config.env
-        })
-    })
+  app.get('/', (_req, res) => {
+    res.status(200).json({
+      status: 'ok',
+      message: 'API running',
+    });
+  });
 
-    return app
+  app.get('/health', (_req, res) => {
+    res.status(200).json({
+      status: 'ok',
+      timestamp: new Date().toISOString(),
+      environment: config.env,
+    });
+  });
 
-}
+  app.use('/api', routes);
+
+  app.use(errorHandler);
+
+  return app;
+};
