@@ -156,7 +156,36 @@ class Logger {
   logDatabase(operation, details = {}) {
     this.logger.debug(`DATABASE: ${operation}`, details);
   }
+
+  logDatabaseQuery(operation, query, result, duration, error=null){
+    const logData = {
+      operation,
+      query: query.substring(0,150),
+      duration: `${duration}ms`
+    }
+
+    if(result) logData.rowCount = result.rowCount
+    if(error) {
+      logData.error = {
+        message: error.message,
+        code: error.code,
+        detail: error.detail
+      }
+      this.logger.error(`Database Error: ${operation}`, logData)
+    } else if(duration > 1000){
+      this.logger.warn(`Database slow query: ${operation}`, logData)
+    } else{
+      this.logger.debug(`Database: ${operation}`, logData)
+    }
+  }
+
+  logDatabaseConnection(action, poolStats = {}) {
+    this.logger.info(`Database connetion: ${action}`, {
+      ...poolStats,
+      timestamp: new Date().toISOString()
+    })
+  }
 }
 
-const logger = new Logger(baseLogger);
+const logger = new Logger(baseLogger)
 export default logger;
