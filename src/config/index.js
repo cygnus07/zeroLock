@@ -6,6 +6,13 @@ dotenv.config();
 const envSchema = z.object({
   NODE_ENV: z.enum(['development', 'test', 'production']).default('development'),
   PORT: z.coerce.number().default(3000),
+
+  DATABASE_HOST: z.string().default('localhost'),
+  DATABASE_PORT: z.coerce.number().default(5432),  
+  DATABASE_NAME: z.string().default('zerolock_dev'),
+  DATABASE_USER: z.string().default('zerolock_user'),
+  DATABASE_PASSWORD: z.string(),
+  DATABASE_SSL: z.coerce.boolean().default(false),
   
   RATE_LIMIT_WINDOW_MS: z.coerce.number().default(900000),
   RATE_LIMIT_MAX_REQUESTS: z.coerce.number().default(100),
@@ -43,4 +50,12 @@ export const config = {
       error: 'Too many requests, please try again later.',
     },
   },
+  database: {
+    host: envVars.DATABASE_HOST,
+    port: envVars.DATABASE_PORT,
+    name: envVars.DATABASE_NAME,
+    user: envVars.DATABASE_USER,
+    password: envVars.DATABASE_PASSWORD,
+    ssl: envVars.DATABASE_SSL
+  }
 };
