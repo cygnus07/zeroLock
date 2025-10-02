@@ -1,8 +1,8 @@
 import path from 'path'
 import { fileURLToPath} from 'url'
-import { checkConnection, query, closePool } from './src/utils/database.js'
+import { checkConnection, query, closePool } from '../src/utils/database.js'
 import fs from 'fs/promises'
-import logger from './src/utils/logger.js'
+import logger from '../src/utils/logger.js'
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
