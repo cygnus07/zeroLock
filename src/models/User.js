@@ -20,9 +20,9 @@ class User {
         } = userData
 
         const sql = `
-            insert values users(
+            insert into users(
                 email, username, srp_salt, srp_verifier,
-                vault_key_encrypted, pubic_key, private_key_encrypted
+                vault_key_encrypted, public_key, private_key_encrypted
             ) values ( $1, $2, $3, $4, $5, $6, $7)
              returning id, email, username, created_at
         `
@@ -155,9 +155,9 @@ class User {
                     when failed_login_attempts >= 4 then true
                     else false
                 end
-                where id = $1
-                returning failed_login_attempts, account_locked
-        `
+            where id = $1
+            returning failed_login_attempts, account_locked
+    `
         const result = await query(sql, [userId])
         const { failed_login_attempts, account_locked} = result.rows[0]
         if(account_locked){
@@ -223,11 +223,39 @@ class User {
         logger.logSecurity('Srp verifier updated', {userId})
     }
 
-    static async delete(userId) {}
+    static async delete(userId) {
+        const sql = 'delete from users where id = $1 returning email, username'
+        const result = await query(sql, [userId])
+        if(result.rows[0]){
+            logger.logSecurity('Account Deleted', {
+                userId,
+                email: result.rows[0].email,
+                username: result.rows[0].username
+            })
+        }
 
-    static async search(serachTerm, limit = 10) {}
+        return result.rows[0]
+    }
 
-    static async getTotalCount() {}
+    static async search(searchTerm, limit = 10) {
+        const sql = `
+            select id, email, username, created_at
+            from users
+            where
+                email ilike $1 or
+                username ilike $1
+            order by created_at desc
+            limit $2
+        `
+        const result = await query(sql, [`%${searchTerm}%`, limit])
+        return result.rows
+    }
+
+    static async getTotalCount() {
+        const sql = 'select count(*) as count from users '
+        const result = await query(sql)
+        return parseInt(result.rows[0].count)
+    }
 
 
 }
