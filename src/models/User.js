@@ -55,9 +55,41 @@ class User {
         }
     }
 
-    static async findById(id) {}
+    static async findById(id) {
+        // prepare the sql query to select a user by id
+        // execute the query with the provided is as parameter
+        // return the record if user found, else return null
 
-    static async findByEmial(email) {}
+        const sql = `
+            select
+             id, email, username, srp_salt, srp_verifier, vault_key_encrypted, public_key,
+             private_key_encrypted, account_locked, failed_login_attempts,
+             last_failed_login, created_at, updated_at, last_login
+            from users
+            where id = $1
+        `
+
+        const result = await query(sql, [id])
+        return result.rows[0] || null
+    }
+
+    static async findByEmial(email) {
+        // prepare sql query to select a user by email
+        // normalize the email to lowercase
+        // execute the query with the email as param
+        // return the user if fond, else return null
+        const sql = `
+            select
+             id, email, username, srp_salt, srp_verifier, vault_key_encrypted, public_key,
+             private_key_encrypted, account_locked, failed_login_attempts,
+             last_failed_login, created_at, updated_at, last_login
+            from users
+            where email = $1
+        `
+
+        const result = await query(sql, [email.toLowerCase()])
+        return result.rows[0] || null
+    }
 
     static async findByUsername(username) {}
 
