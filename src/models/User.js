@@ -171,15 +171,57 @@ class User {
         return result.rows[0]
     }
 
-    static async resetFailedLoginAttempts(userId) {}
+    static async resetFailedLoginAttempts(userId) {
+        const sql = `
+            update users
+            set
+                failed_login_attempts = 0,
+                last_failed_login = null,
+                account_locked = false
+            where id = $1
+        `
+        await query(sql,[userId])
+    }
 
-    static async isAccountLocked(userId) {}
+    static async isAccountLocked(userId) {
+        const sql = 'select account_locked from users where id = $1'
+        const result = await query(sql, [userId])
+        return result.rows[0]?.account_locked || false
+    }
 
-    static async updateVaultKey(userId, vaultKeyEncrypted) {}
+    static async updateVaultKey(userId, vaultKeyEncrypted) {
+        const sql = `
+            update users
+            set vault_key_encrypted = $1
+            where id = $2
+        `
+        await query(sql, [vaultKeyEncrypted, userId])
+        logger.logSecurity('Vault Key Updated', { userId })
+    }
 
-    static async updateKeys(userId, { publicKey, privateKeyEncrypted }) {}
+    static async updateKeys(userId, { publicKey, privateKeyEncrypted }) {
+        const sql = `
+            update users
+            set
+                public_key = $1,
+                private_key_encrypted = $2
+            where id = $3
+        `
+        await query(sql, [publicKey, privateKeyEncrypted, userId])
+        logger.logSecurity('user Keys updted', { userId})
+    }
 
-    static async updateSrpVerifier(userId, { srpSalt, srpVerifier}) {}
+    static async updateSrpVerifier(userId, { srpSalt, srpVerifier}) {
+        const sql = `
+            update users
+            set
+                srp_salt = $1,
+                srp_verifier = $2
+            where id = $3
+        `
+        await query(sql, [srpSalt, srpVerifier, userId])
+        logger.logSecurity('Srp verifier updated', {userId})
+    }
 
     static async delete(userId) {}
 
