@@ -22,10 +22,10 @@ create table if not exists users (
 create or replace function update_updated_at_column()
 returns trigger as $$
 begin
-    new.updated_at = current_timestamp
-    return new
+    new.updated_at = current_timestamp;
+    return new;
 end;
-$$ language 'plpgsql';
+$$ language plpgsql;
 
 create trigger update_users_updated_at before update
     on users for each row execute function update_updated_at_column()

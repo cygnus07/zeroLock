@@ -9,7 +9,7 @@ export const dbConfig = {
             user: config.database.user,
             password: config.database.password,
             database: config.database.name,
-            ssl: config.database.ssl ? { rejectUnathorized: false} : false,
+            ssl: config.database.ssl ? { rejectUnauthorized: false} : false,
         },
         pool: {
             min: 2,
