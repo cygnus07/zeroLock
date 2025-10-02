@@ -46,7 +46,7 @@ const public_key = z
 .max(2048, 'Public key is too long')
 
 
-export const authSchema = {
+export const authSchemas = {
     checkAvailability: z.object({
         email: email.optional(),
         username: username.optional()
@@ -114,3 +114,19 @@ export const vaultSchemas = {}
 export const securitySchemas = {}
 
 export const querySchemas = {}
+
+export const validate = (schema, data) => {
+    return schema.parse(data)
+}
+
+export const safeValidate = (schema, data) => {
+    const result = schema.safeParse(data)
+    return result.success ? result.data : null
+}
+
+export default {
+    auth: authSchemas,
+    vault: vaultSchemas,
+    security: securitySchemas,
+    query: querySchemas
+}
