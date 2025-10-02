@@ -44,3 +44,73 @@ const public_key = z
 .string()
 .min(1, 'Public key is required')
 .max(2048, 'Public key is too long')
+
+
+export const authSchema = {
+    checkAvailability: z.object({
+        email: email.optional(),
+        username: username.optional()
+    }).refine(
+        data => data.email || data.username,
+        'Either email or username must be provided'
+    ),
+
+    registerInit: z.object({
+        email, 
+        username
+    }),
+
+    registerComplete: z.object({
+        email,
+        username,
+        srpSalt,
+        srpVerifier,
+        vaultKeyEncrypted: encryptedKey,
+        publicKey,
+        privateKeyEncrypted: encryptedKey
+    }), 
+
+
+    // login
+    loginInit: z.object({
+        identifier: z.string().min(1, 'Email or username is required')
+    }),
+
+    loginVerify: z.object({
+        sessionId: uuid,
+        clientProof: z.string().min(1, 'Client proof is required')
+    }),
+
+
+    changePassword: z.object({
+        currentPasword: password,
+        newPassword: password,
+        srpSalt,
+        srpVerifier,
+    }),
+
+    resetPasswordRequest: z.object({
+        email,
+    }),
+
+    resetPasswordConfirm: z.object({
+        token: z.string().min(1, 'Reset token is required'),
+        srpSalt,
+        srpVerifier
+    }),
+
+
+    updateProfile: z.object({
+        username: username.optional(),
+        email: email.optional(),
+    }).refine(
+        data => Object.keys(data).length > 0,
+        'at least one field must be provided'
+    )
+}
+
+export const vaultSchemas = {}
+
+export const securitySchemas = {}
+
+export const querySchemas = {}
