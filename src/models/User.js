@@ -141,7 +141,35 @@ class User {
         return result.rows[0]
     }
 
-    static async incrementFailedLoginAttempts(userId) {}
+    static async incrementFailedLoginAttempts(userId) {
+        // prepare the sql query
+        // execute the query with userId as parameter
+        // destructure the result to get failed_login attemps and ccount_locked
+        // if account locked give error else return result
+        const sql = `
+            update users
+            set 
+                failed_login_attempts = failed_login_attempts +1,
+                last_failed_login = current_timestamp,
+                account_locked = case
+                    when failed_login_attempts >= 4 then true
+                    else false
+                end
+                where id = $1
+                returning failed_login_attempts, account_locked
+        `
+        const result = await query(sql, [userId])
+        const { failed_login_attempts, account_locked} = result.rows[0]
+        if(account_locked){
+            logger.logSecurity('Account Locked', {
+                userId,
+                reason: 'Too many failed login attempts',
+                attempts: failed_login_attempts
+            })
+        }
+
+        return result.rows[0]
+    }
 
     static async resetFailedLoginAttempts(userId) {}
 
