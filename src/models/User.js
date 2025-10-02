@@ -73,7 +73,7 @@ class User {
         return result.rows[0] || null
     }
 
-    static async findByEmial(email) {
+    static async findByEmail(email) {
         // prepare sql query to select a user by email
         // normalize the email to lowercase
         // execute the query with the email as param
@@ -91,15 +91,55 @@ class User {
         return result.rows[0] || null
     }
 
-    static async findByUsername(username) {}
+    static async findByUsername(username) {
+        // prepare the sql query to select user by username
+        // execute the query with username as paramerter
+        // resturn the user if found else return null
+        const sql = `
+            select
+             id, email, username, srp_salt, srp_verifier, vault_key_encrypted, public_key,
+             private_key_encrypted, account_locked, failed_login_attempts,
+             last_failed_login, created_at, updated_at, last_login
+            from users
+            where username = $1
+        `
+        const result = await query(sql, [username])
+        return result.rows[0] || null
+    }
 
-    static async findByIdentifier(identifier) {}
+    static async findByIdentifier(identifier) {
+        // check if the identifier is email or username
+        // call the matching functions to get the user
+        const isEmail = identifier.includes('@')
+        return isEmail 
+        ? await this.findByEmail(identifier)
+        : await this.findByUsername(identifier)
+    }
 
-    static async checkEmailExists(email) {}
+    static async checkEmailExists(email) {
+        // prepare the sql query 
+        // execute te query with the sql and email
+        const sql = ' select 1 from users where email = $1 limit 1'
+        const result = await query(sql, [email.toLowerCase()])
+        return result.rows.length > 0
+    }
 
-    static async checkUsernameExists(username) {}
+    static async checkUsernameExists(username) {
+        const sql = 'select 1 from users where username = $1 limit 1'
+        const result = await query(sql, [username])
+        return result.rows.length > 0
+    }
 
-    static async updateLastLogin(userId) {}
+    static async updateLastLogin(userId) {
+        const sql = `
+            update users
+            set last_login = current_timestamp
+            where id = $1
+            returning last_login
+        `
+        const result = await query(sql, [userId])
+        return result.rows[0]
+    }
 
     static async incrementFailedLoginAttempts(userId) {}
 
