@@ -40,3 +40,7 @@ const encryptedKey = z
 .min(1, 'Encrypted key is required')
 .max(4096, 'Encrypted key is too long')
 
+const public_key = z
+.string()
+.min(1, 'Public key is required')
+.max(2048, 'Public key is too long')
