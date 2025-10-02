@@ -102,6 +102,67 @@ class SecurityLog {
         const result = await query(sql, [userId, this.ACTIONS.LOGIN_ATTEMPT])
         return parseInt(result.rows[0].count)
     }
+
+    static async getRecentActivity(userId, days = 7) {
+        const sql = `
+            select 
+                action,
+                count(*) as count,
+                max(timestamp) as last_occurence
+            from security_logs
+            where 
+                user_id = $1
+                and timestamp > now() - interval '${days} days'
+            group by action
+            order by last_occurence desc
+        `
+
+        const result = await query(sql, [userId])
+        return result.rows
+    }
+
+    static async getSecurityStats(userId) {
+        const sql = `
+            select
+                count(case when action = '{this.ACTIONS.LOGIN_SUCCESS}' then 1 end) as successful_logins,
+                count(case when aciton = '${this.ACTIONS.LOGIN_FAILED}' then 1 end) as failed_logins,
+                count(case when action = '${this.ACTIONS.SUSPICIOUS_ACTIVITY}' then 1 end) as suspicious_activities,
+                count(distinct ip_address) as unique_ips,
+                max(case when action = '${this.ACTIONS.LOGIN_SUCCESS}' then timestamp end) as last_login
+            from security_logs
+            where user_id = $1
+        `
+
+        const result = await query(sql, [userId])
+        return result.rows[0]
+    }
+
+
+    static async findSuspiciousActivity({ limit = 100} = {}) {
+        const sql = `
+            select
+                sl.*,
+                u.email,
+                u.username
+            from security_logs sl
+            left join users u on sl.user_id = u.id
+            where 
+                sl.action in ($1, $2, $3)
+                or sl.success = false
+            order by sl.timestamp desc
+            limit $4
+        `
+
+        const values = [
+            this.ACTIONS.SUSPICIOUS_ACTIVITY,
+            this.ACTIONS.ACCOUNT_LOCKED,
+            this.ACTIONS.RATE_LIMIT_EXCEEDED,
+            limit
+        ]
+
+        const result = await query(sql, values)
+        return result.rows
+    }
 }
 
 
