@@ -173,7 +173,7 @@ export const validateFile = (options = {}) => {
 
         if(!allowedTypes.includes(req.file.mimetype)) {
             throw new AppError(
-                `File type now allowed. Allowed types: ${allowedTypes.join(', ')}`,
+                `File type not allowed. Allowed types: ${allowedTypes.join(', ')}`,
                 400,
                 true
             )
