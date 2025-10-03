@@ -1,4 +1,5 @@
 import logger from '../utils/logger.js'
+import { AppError } from '../utils/errors.js'
 
 export const validate = (schema, property = 'body') => {
     return (req,res,next) => {
@@ -7,13 +8,13 @@ export const validate = (schema, property = 'body') => {
             req[property] = validated
             logger.debug(`Validation passed for ${req.method} ${req.path}`, {
                 property,
-                validateFields: Object.keys(validated)
+                validatedFields: Object.keys(validated)
             })
 
             next()
         } catch (error) {
             if(error.name === 'ZodError') {
-                const errors =error.errors.map(err => ({
+                const errors = error.errors.map(err => ({
                     field: err.path.join('.'),
                     message: err.message,
                     code: err.code
@@ -40,9 +41,62 @@ export const validate = (schema, property = 'body') => {
     }
 }
 
-export const validateOptional = (schema, property = 'body') => {}
+export const validateOptional = (schema, property = 'body') => {
+    return (req,res,next) => {
+        try {
+            const result = schema.safeParse(req[property])
+            if(result.success){
+                req[property] =result.data
+                req.validationPassed = true
+            } else {
+                req.validationErrors = result.error.errors.map(err => ({
+                    field: err.path.join('.'),
+                    message: err.message,
+                    code: err.code,
+                }))
+                req.validationPassed = false
+            }
+            next()
+        } catch (error) {
+            logger.error('Optional validation error', {
+                error: error.message,
+                method: req.method,
+                path: req.path,
+            })
 
-export const validateMultiple = (validations) => {}
+            next()
+        }
+    }
+}
+
+export const validateMultiple = (validations) => {
+    return async (req,res, next) => {
+        try {
+            for(const { schema, property = 'body' } of validations) {
+                const validated = schema.parse(req[property])
+                req[property] = validated
+            }
+            next()
+        } catch (error) {
+            if(error.name === 'ZodError'){
+                const errors = error.errors.map(err => ({
+                    field: err.path.join('.'),
+                    message: err.message,
+                    code: err.code
+                }))
+
+                throw new AppError(
+                    'Validation failed',
+                    400,
+                    true,
+                    {errors}
+                )
+            }
+
+            throw error
+        }
+    }
+}
 
 export const sanitize = (fields = []) => {
     return (req,res,next) => {
@@ -93,7 +147,7 @@ export const requireContentType = (contentType = 'application/json') => {
     }
 }
 
-export const validateFile = (options = {}) => {}
+// export const validateFile = (options = {}) => {}
 
 export const authValidation = {
     body: (schema) => validate(schema, 'body'),
