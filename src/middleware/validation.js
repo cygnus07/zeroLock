@@ -147,7 +147,41 @@ export const requireContentType = (contentType = 'application/json') => {
     }
 }
 
-// export const validateFile = (options = {}) => {}
+export const validateFile = (options = {}) => {
+    const {
+        maxSize = 5*1024*1024,
+        allowedTypes = ['image/jpeg', 'image/png', 'image/gif'],
+        required = false,
+    } = options
+
+    return(req,res,next) => {
+        if(!req.file && required){
+            throw new AppError('File is required', 400, true)
+        }
+
+        if(!req.file){
+            return next()
+        }
+
+        if(req.file.size > maxSize){
+            throw new AppError(
+                `File size exceeds maximum allowed size of ${maxSize/1024/1024}MB`,
+                400,
+                true
+            )
+        }
+
+        if(!allowedTypes.includes(req.file.mimetype)) {
+            throw new AppError(
+                `File type now allowed. Allowed types: ${allowedTypes.join(', ')}`,
+                400,
+                true
+            )
+        }
+
+        next()
+    }
+}
 
 export const authValidation = {
     body: (schema) => validate(schema, 'body'),
