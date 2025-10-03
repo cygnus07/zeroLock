@@ -1,4 +1,4 @@
-import { z} from 'zod'
+import { z } from 'zod'
 
 const email = z.string().email('Invalid email address')
                 .max(255, 'Email must be less than 255 characters')
@@ -40,7 +40,7 @@ const encryptedKey = z
 .min(1, 'Encrypted key is required')
 .max(4096, 'Encrypted key is too long')
 
-const public_key = z
+const publicKey = z
 .string()
 .min(1, 'Public key is required')
 .max(2048, 'Public key is too long')
@@ -83,7 +83,7 @@ export const authSchemas = {
 
 
     changePassword: z.object({
-        currentPasword: password,
+        currentPassword: password,
         newPassword: password,
         srpSalt,
         srpVerifier,
@@ -109,11 +109,59 @@ export const authSchemas = {
     )
 }
 
-export const vaultSchemas = {}
+export const vaultSchemas = {
+    createItem: z.object({
+        encryptedData: encryptedKey,
+        type: z.enum(['login', 'note', 'card', 'identity']),
+        favorite: z.boolean().default(false)
+    }),
 
-export const securitySchemas = {}
+    updateItem: z.object({
+        encryptedData: encryptedKey,
+        favorite: z.boolean().optional(),
+    }),
 
-export const querySchemas = {}
+    shareItem: z.object({
+        itemId: uuid,
+        recipientId: uuid,
+        encryptedKey: encryptedKey,
+        permissions: z.enum(['read', 'write']).default('read')
+    })
+}
+
+export const securitySchemas = {
+    enable2FA: z.object({
+        password,
+        totpSecret: z.string().min(16, 'Invalid TOTP secret'),
+        totpCode: z.string().length(6, 'TOTP code must be 6 digits')
+    }),
+
+    verify2FA: z.object({
+        totpCode: z.string().length(6, 'TOTP code must be 6 digits')
+    }),
+
+    securityQuestion: z.object({
+        question: z.string().min(10, 'Question too short').max(200),
+        answerHash: z.string().min(1, 'Answer hash required')
+    })
+}
+
+export const querySchemas = {
+    pagination: z.object({
+        page: z.coerce.number().int().positive().default(1),
+        limit: z.coerce.number().int().min(1).max(100).default(20)
+    }),
+
+    search: z.object({
+        q: z.string().min(1, 'Search query required').max(100),
+        type: z.enum(['all', 'login', 'note', 'card', 'identity']).default('all')
+    }),
+
+    dateRange: z.object({
+        startDate: z.coerce.date().optional(),
+        endDate: z.coerce.date().optional()
+    })
+}
 
 export const validate = (schema, data) => {
     return schema.parse(data)
