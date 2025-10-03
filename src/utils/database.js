@@ -12,11 +12,13 @@ export const createPool = () => {
     pool = new Pool(config.connection)
 
     pool.on('connect', (client) => {
-        logger.logDatabase('Client connected', {
+       if(pool){
+         logger.logDatabase('Client connected', {
             totalCount: pool.totalCount,
             idleCount: pool.idleCount,
             waitingCount: pool.waitingCount
         })
+       }
     })
 
     pool.on('error', (err, client) => {
@@ -24,10 +26,12 @@ export const createPool = () => {
     })
 
     pool.on('remove', () => {
-        logger.logDatabase('Client removed', {
+        if(pool){
+          logger.logDatabase('Client removed', {
             totalCount: pool.totalCount,
             idleCount: pool.idleCount
         })
+        }
     })
 
     return pool
