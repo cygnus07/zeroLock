@@ -12,6 +12,14 @@ class CryptoService {
     static generateSessionId() {
         return crypto.randomUUID()
     }
+
+    static secureCompare(a,b) {
+        if(a.length !== b.length) return false
+        return crypto.timingSafeEqual(
+            Buffer.from(a),
+            Buffer.from(b)
+        )
+    }
 }
 
 export default CryptoService
