@@ -1,8 +1,10 @@
 import { Router } from 'express';
 import { checkConnection } from '../utils/database.js';
 import { config } from '../config/index.js';
-
+import authRoutes from './auth.js'
 const router = Router();
+
+router.use('/auth', authRoutes)
 
 router.get('/', (_req, res) => {
   res.status(200).json({
