@@ -130,7 +130,45 @@ class SrpService {
     return true
     }
 
-   
+    static async deriveVaultKeys(sessionKey, email) {
+        const vaultKey = await CryptoService.deriveKey(
+            sessionKey,
+            `vault:${email}`,
+            50000,
+            32
+        )
+
+        const authKey = await CryptoService.deriveKey(
+            sessionKey,
+            `auth:${email}`,
+            50000,
+            32
+        )
+
+        return { vaultKey, authKey}
+    }
+
+    static async changePassword(email, oldPassword, newPassword, currentParams) {
+        // first verify the old password
+        // then generate new parameters with the new password
+        const identity = email.toLowerCase()
+        const oldVerifier = srp.deriverVerifier({
+            salt: currentParams.salt,
+            identity,
+            password: oldPassword
+        })
+
+        if(!CryptoService.secureCompare(oldVerifier, currentParams.verifier)){
+            throw new Error('Current password is incorrect')
+        }
+
+        return this.generateRegistrationParams(email, newPassword)
+    }
+
+    static async generateResetVerifier(email, resetToken) {
+        // use the resetToken as a temporary password
+        return this.generateRegistrationParams(email, resetToken)
+    }
 }
 
 export default SrpService

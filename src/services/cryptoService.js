@@ -20,6 +20,15 @@ class CryptoService {
             Buffer.from(b)
         )
     }
+
+    static async deriveKey(password, salt, iterations = 100000, keyLength = 32) {
+        return new Promise((resolve, reject) => {
+            crypto.pbkdf2(password, salt, iterations, keyLength, 'sha256', (err, derivedKey) => {
+                if(err) reject(err)
+                else resolve(derivedKey.toString('hex'))
+            })
+        })
+    }
 }
 
 export default CryptoService
