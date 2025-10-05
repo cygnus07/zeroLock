@@ -32,7 +32,38 @@ class SrpService {
         } 
     }
 
-  
+    static async startAuthentication(email, salt, verifier) {
+        // generate the key pair
+        // generate session id to track the login attempt
+        // return the sessionid, serverPublickey and serversecretekey
+        try {
+            const serverEphemeral = srp.generateEphemeral(verifier)
+            const sessionId = CryptoService.generateSessionId()
+    
+            logger.debug('Srp authentication started', {
+                email, 
+                sessionId,
+                serverPublicKeyLength: serverEphemeral.public.length
+            })
+    
+            return {
+                sessionId,
+                serverPublicKey: serverEphemeral.public,
+                serverSecretKey: serverEphemeral.secret,
+                salt,
+            }
+        } catch (error) {
+            logger.error('Failed to start srp authentication', {
+                error: error.message,
+                email
+            })
+
+            throw error
+        }
+        
+    }
+
+ 
 }
 
 export default SrpService

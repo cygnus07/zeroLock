@@ -8,6 +8,10 @@ class CryptoService {
         const saltBytes = await randomBytes(32)
         return saltBytes.toString('hex')
     }
+
+    static generateSessionId() {
+        return crypto.randomUUID()
+    }
 }
 
 export default CryptoService
