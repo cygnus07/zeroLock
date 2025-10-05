@@ -63,7 +63,74 @@ class SrpService {
         
     }
 
- 
+    static verifyClientProof({
+        clientPublicKey,
+        clientProof,
+        serverSecretKey,
+        verifier,
+        salt,
+        email
+    }) {
+        // derive the shared session key
+        // verify client's proof
+        // generate the server's proof for mutual auth
+        try {
+            const sessionKey = srp.deriveSession({
+                clientPublicKey,
+                serverSecretKey,
+                verifier,
+                salt,
+                identity: email.toLowerCase()
+            })
+
+            const isValid = CryptoService.secureCompare(
+                clientProof,
+                sessionKey.proof
+            )
+
+            if(!isValid){
+                logger.warn('Invalid client proof', { email })
+                return { verified: false}
+            }
+
+            const serverProof = sessionKey.proof
+            logger.debug('Srp verification successful', { email })
+            return {
+                verified: true,
+                serverProof,
+                sessionKey: sessionKey.key
+            }
+        } catch (error) {
+            logger.error('Srp verification failed', {
+                error: error.message,
+                email
+            })
+            return { verified: false}
+        }
+    }
+
+    static validateParams(salt, verifier) {
+         if (!salt || !/^[0-9a-f]{64}$/i.test(salt)) {
+      logger.warn('Invalid SRP salt format')
+      return false;
+    }
+
+    // Verifier should be a valid hex string
+    if (!verifier || !/^[0-9a-f]+$/i.test(verifier)) {
+      logger.warn('Invalid SRP verifier format')
+      return false
+    }
+
+    // Verifier should be reasonable length (typically 512 chars for 2048-bit)
+    if (verifier.length < 256 || verifier.length > 1024) {
+      logger.warn('Invalid SRP verifier length', { length: verifier.length });
+      return false
+    }
+
+    return true
+    }
+
+   
 }
 
 export default SrpService
