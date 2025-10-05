@@ -11,7 +11,7 @@ class SrpService {
         try {
             const salt = await CryptoService.generateSalt()
             const identity = email.toLowerCase()
-            const verifier = srp.deriverVerifier({
+            const verifier = srp.deriveVerifier({
                 salt,
                 identity,
                 password,
@@ -152,7 +152,7 @@ class SrpService {
         // first verify the old password
         // then generate new parameters with the new password
         const identity = email.toLowerCase()
-        const oldVerifier = srp.deriverVerifier({
+        const oldVerifier = srp.deriveVerifier({
             salt: currentParams.salt,
             identity,
             password: oldPassword
