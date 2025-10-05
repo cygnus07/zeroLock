@@ -116,7 +116,7 @@ class AuthController {
                 username: user.username
             })
 
-            logger.info('New user registered'., {
+            logger.info('New user registered', {
                 userId: user.id,
                 email: user.email,
                 username: user.username
@@ -261,7 +261,55 @@ class AuthController {
         }
     }
 
- 
+    static async logout(req, res, next) {
+        try {
+            if(req.user){
+                await SecurityLog.logRequest(req, SecurityLog.ACTIONS.LOGOUT, true, {
+                    userId: req.user.id,
+                })
+            }
+
+            res.json({
+                success: true,
+                data: {
+                    message: 'Logged out successfully'
+                }
+            })
+        } catch (error) {
+            next(error)
+        }
+    }
+
+    static async getProfile(req,res, next) {
+        try {
+            const userId = req.user?.id
+            if(!userId) {
+                throw new AppError('Unauthorized', 401, true)
+            }
+
+            const user = await User.findById(userId)
+            if(!user){
+                throw new AppError('user not found', 404, true)
+            }
+
+            res.json({
+                success: true,
+                data: {
+                    user: {
+                        id: user.id,
+                        email: user.email,
+                        username: user.username,
+                        publicKey: user.public_key,
+                        createdAt: user.created_at,
+                        updatedAt: user.updated_at,
+                        lastLogin: user.last_login
+                    }
+                }
+            })
+        } catch (error) {
+            next(error)
+        }
+    }
 }
 
 
