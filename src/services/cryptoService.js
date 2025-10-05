@@ -29,6 +29,11 @@ class CryptoService {
             })
         })
     }
+
+    static async generateSecureToken(length = 32) {
+        const bytes = await randomBytes(length)
+        return bytes.toString('base64url')
+    }
 }
 
 export default CryptoService
