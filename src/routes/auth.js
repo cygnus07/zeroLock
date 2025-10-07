@@ -25,7 +25,7 @@ const checkRateLimiter = rateLimit({
 router.post(
     '/check-availability',
     checkRateLimiter,
-    validate(authSchemas.checkAvailability),
+    // validate(authSchemas.checkAvailability),
     AuthController.checkAvailability
 )
 
@@ -33,14 +33,14 @@ router.post(
 router.post(
     '/register/init',
     authRateLimiter,
-    validate(authSchemas.registerInit),
+    // validate(authSchemas.registerInit),
     AuthController.registerInit
 )
 
 router.post(
     '/register/complete',
     authRateLimiter,
-    validate(authSchemas.registerComplete),
+    // validate(authSchemas.registerComplete),
     AuthController.registerComplete
 )
 
@@ -48,7 +48,7 @@ router.post(
 router.post(
     '/login/verify',
     authRateLimiter,
-    validate(authSchemas.loginVerify),
+    // validate(authSchemas.loginVerify),
     AuthController.loginVerify
 )
 

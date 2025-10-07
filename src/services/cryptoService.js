@@ -121,7 +121,7 @@ class CryptoService {
 
     static encryptWithPublicKey(publicKey, data) {
         const encrypted = crypto.publicEncrypt(
-            {
+            {   
                 key: publicKey,
                 padding: crypto.constants.RSA_PKCS1_OAEP_PADDING,
                 oaepHash: 'sha256'

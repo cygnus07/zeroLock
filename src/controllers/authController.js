@@ -1,7 +1,7 @@
 import User from '../models/User.js'
-import logger from '../utils/logger'
+import logger from '../utils/logger.js'
 import SecurityLog from '../models/SecurityLog.js'
-import CryptoService from '../services/cryptoService'
+import CryptoService from '../services/cryptoService.js'
 import SrpService from '../services/srpService.js'
 import SrpSession from '../models/SrpSession.js'
 

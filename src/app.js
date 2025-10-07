@@ -16,8 +16,7 @@ export const createApp = () => {
   app.use(helmet());
   app.use(cors(config.cors));
 
-  app.use('/api', rateLimit(config.rateLimit));
-
+  
   app.use(express.json({ limit: '10mb' }));
   app.use(express.urlencoded({ 
     extended: true, 
@@ -25,11 +24,15 @@ export const createApp = () => {
   }));
   app.use(cookieParser());
   app.use(compression());
-
+  
   if (config.env !== 'test') {
     app.use(requestLogger);
   }
+  
+  // const apiRateLimiter = rateLimit(config.rateLimit);
+  // app.use('/api', apiRateLimiter);
 
+  
   app.get('/', (_req, res) => {
     res.status(200).json({
       status: 'ok',

@@ -16,6 +16,10 @@ const envSchema = z.object({
   
   RATE_LIMIT_WINDOW_MS: z.coerce.number().default(900000),
   RATE_LIMIT_MAX_REQUESTS: z.coerce.number().default(100),
+  JWT_SECRET: z.string().min(64),
+  JWT_EXPIRES_IN: z.string().default('24h'),
+  JWT_REFRESH_SECRET: z.string().min(64),
+  JWT_REFRESH_EXPIRES_IN: z.string().default('7d')
   
 });
 
@@ -57,5 +61,11 @@ export const config = {
     user: envVars.DATABASE_USER,
     password: envVars.DATABASE_PASSWORD,
     ssl: envVars.DATABASE_SSL
+  },
+  jwt: {
+    secret: envVars.JWT_SECRET,
+    expiresIn: envVars.JWT_EXPIRES_IN,
+    refreshSecret: envVars.JWT_REFRESH_SECRET,
+    refreshExpiresIn: envVars.JWT_REFRESH_EXPIRES_IN
   }
 };
