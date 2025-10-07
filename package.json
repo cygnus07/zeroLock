@@ -39,7 +39,7 @@
     "zod": "^3.25.76"
   },
   "devDependencies": {
-    "eslint": "^9.31.0",
+    "eslint": "^8.57.0",
     "eslint-config-standard": "^17.1.0",
     "eslint-plugin-import": "^2.31.0",
     "eslint-plugin-n": "^17.15.2",
