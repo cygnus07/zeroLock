@@ -6,6 +6,7 @@ dotenv.config();
 const envSchema = z.object({
   NODE_ENV: z.enum(['development', 'test', 'production']).default('development'),
   PORT: z.coerce.number().default(3000),
+  CORS_ORIGINS: z.string().optional().default('http://localhost:3000,http://localhost:5173'),
 
   DATABASE_HOST: z.string().default('localhost'),
   DATABASE_PORT: z.coerce.number().default(5432),  
@@ -40,9 +41,9 @@ export const config = {
   env: envVars.NODE_ENV,
   port: envVars.PORT,
   
-  cors: {
-    origin: envVars.NODE_ENV === 'production' 
-      ? envVars.CORS_ORIGINS.split(',').map(origin => origin.trim())
+ cors: {
+    origin: envVars.NODE_ENV === 'production'
+      ? (envVars.CORS_ORIGINS || '').split(',').map(origin => origin.trim())
       : ['http://localhost:3000', 'http://localhost:5173'],
     credentials: true,
   },
