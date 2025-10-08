@@ -29,8 +29,8 @@ export const createApp = () => {
     app.use(requestLogger);
   }
   
-  // const apiRateLimiter = rateLimit(config.rateLimit);
-  // app.use('/api', apiRateLimiter);
+  const apiRateLimiter = rateLimit(config.rateLimit);
+  app.use('/api', apiRateLimiter);
 
   
   app.get('/', (_req, res) => {

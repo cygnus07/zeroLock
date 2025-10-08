@@ -9,6 +9,7 @@ export const createPool = () => {
     if(pool) return pool
 
     const config = getDbConfig()
+    console.log(config)
     pool = new Pool(config.connection)
 
     pool.on('connect', (client) => {
