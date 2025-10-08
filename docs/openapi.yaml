@@ -1,0 +1,1073 @@
+openapi: 3.0.3
+info:
+  title: ZeroLock API
+  description: |
+    ZeroLock is a zero-knowledge password manager API that implements the Secure Remote Password (SRP) protocol for authentication. 
+    This ensures that passwords never leave the client in plaintext form.
+    
+    ## Authentication
+    Most endpoints require JWT authentication. Include the token in the Authorization header:
+    ```
+    Authorization: Bearer <your-jwt-token>
+    ```
+  version: 1.0.0
+  contact:
+    name: API Support
+    url: https://github.com/cygnus07/zeroLock
+  license:
+    name: MIT
+    url: https://opensource.org/licenses/MIT
+
+servers:
+  - url: https://zerolock-api.kuldeepdev.me/api
+    description: Production server
+  - url: http://localhost:4004/api
+    description: Development server
+
+tags:
+  - name: Health
+    description: Health check endpoints
+  - name: Authentication
+    description: User registration and login endpoints
+  - name: Security
+    description: Security and audit endpoints
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: JWT token obtained from login endpoint
+
+  schemas:
+    SuccessResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        data:
+          type: object
+
+    ErrorResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: false
+        error:
+          type: object
+          properties:
+            message:
+              type: string
+            code:
+              type: string
+            details:
+              type: object
+
+    User:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        email:
+          type: string
+          format: email
+        username:
+          type: string
+        publicKey:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+        lastLogin:
+          type: string
+          format: date-time
+
+    SecurityLog:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        action:
+          type: string
+        success:
+          type: boolean
+        ipAddress:
+          type: string
+        userAgent:
+          type: string
+        timestamp:
+          type: string
+          format: date-time
+        details:
+          type: object
+
+paths:
+  /health:
+    get:
+      tags:
+        - Health
+      summary: Health check
+      description: Check if the API and database are operational
+      responses:
+        '200':
+          description: API is healthy
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: healthy
+                  timestamp:
+                    type: string
+                    format: date-time
+                  uptime:
+                    type: number
+                  environment:
+                    type: string
+                  database:
+                    type: object
+                    properties:
+                      connected:
+                        type: boolean
+                      status:
+                        type: string
+
+  /auth/check-availability:
+    post:
+      tags:
+        - Authentication
+      summary: Check availability
+      description: Check if an email or username is available for registration
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                email:
+                  type: string
+                  format: email
+                username:
+                  type: string
+              example:
+                email: user@example.com
+                username: newuser
+      responses:
+        '200':
+          description: Availability check result
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          email:
+                            type: object
+                            properties:
+                              available:
+                                type: boolean
+                              value:
+                                type: string
+                          username:
+                            type: object
+                            properties:
+                              available:
+                                type: boolean
+                              value:
+                                type: string
+        '400':
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /auth/register/init:
+    post:
+      tags:
+        - Authentication
+      summary: Initialize registration
+      description: Start the registration process
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - email
+                - username
+              properties:
+                email:
+                  type: string
+                  format: email
+                username:
+                  type: string
+              example:
+                email: user@example.com
+                username: newuser
+      responses:
+        '200':
+          description: Registration initialized
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          registrationToken:
+                            type: string
+                          message:
+                            type: string
+        '400':
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '409':
+          description: Email or username already exists
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /auth/register/complete:
+    post:
+      tags:
+        - Authentication
+      summary: Complete registration
+      description: Complete registration with SRP parameters
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - email
+                - username
+                - srpSalt
+                - srpVerifier
+                - vaultKeyEncrypted
+                - publicKey
+                - privateKeyEncrypted
+              properties:
+                email:
+                  type: string
+                  format: email
+                username:
+                  type: string
+                srpSalt:
+                  type: string
+                  description: 64-character hex salt
+                srpVerifier:
+                  type: string
+                  description: Hex SRP verifier
+                vaultKeyEncrypted:
+                  type: string
+                publicKey:
+                  type: string
+                privateKeyEncrypted:
+                  type: string
+              example:
+                email: user@example.com
+                username: newuser
+                srpSalt: 64-char-hex-salt
+                srpVerifier: hex-srp-verifier
+                vaultKeyEncrypted: encrypted-vault-key
+                publicKey: "-----BEGIN PUBLIC KEY-----..."
+                privateKeyEncrypted: encrypted-private-key
+      responses:
+        '200':
+          description: Registration completed successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          user:
+                            $ref: '#/components/schemas/User'
+                          message:
+                            type: string
+        '400':
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /auth/login/init:
+    post:
+      tags:
+        - Authentication
+      summary: Initialize login
+      description: Start the SRP login process
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - identifier
+              properties:
+                identifier:
+                  type: string
+                  description: Email or username
+              example:
+                identifier: user@example.com
+      responses:
+        '200':
+          description: Login initialized
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          sessionId:
+                            type: string
+                            format: uuid
+                          serverPublicKey:
+                            type: string
+                          salt:
+                            type: string
+        '400':
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: User not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '429':
+          description: Too many requests
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /auth/login/verify:
+    post:
+      tags:
+        - Authentication
+      summary: Verify login
+      description: Complete the SRP login with client proof
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - sessionId
+                - clientPublicKey
+                - clientProof
+              properties:
+                sessionId:
+                  type: string
+                  format: uuid
+                clientPublicKey:
+                  type: string
+                clientProof:
+                  type: string
+              example:
+                sessionId: session-uuid
+                clientPublicKey: client-ephemeral-public-key
+                clientProof: client-proof-hex
+      responses:
+        '200':
+          description: Login successful
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          user:
+                            $ref: '#/components/schemas/User'
+                          accessToken:
+                            type: string
+                          refreshToken:
+                            type: string
+                          expiresIn:
+                            type: integer
+                          tokenType:
+                            type: string
+                            example: Bearer
+                          serverProof:
+                            type: string
+        '401':
+          description: Authentication failed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /auth/refresh:
+    post:
+      tags:
+        - Authentication
+      summary: Refresh token
+      description: Get a new access token using refresh token
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - refreshToken
+              properties:
+                refreshToken:
+                  type: string
+              example:
+                refreshToken: your-refresh-token
+      responses:
+        '200':
+          description: Token refreshed successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          accessToken:
+                            type: string
+                          expiresIn:
+                            type: integer
+                          tokenType:
+                            type: string
+        '401':
+          description: Invalid refresh token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /auth/logout:
+    post:
+      tags:
+        - Authentication
+      summary: Logout
+      description: Logout the current user
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Logged out successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          message:
+                            type: string
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /auth/profile:
+    get:
+      tags:
+        - Authentication
+      summary: Get profile
+      description: Get the current user's profile
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: User profile retrieved
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          user:
+                            $ref: '#/components/schemas/User'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+    put:
+      tags:
+        - Authentication
+      summary: Update profile
+      description: Update user profile information
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                email:
+                  type: string
+                  format: email
+                username:
+                  type: string
+              example:
+                email: newemail@example.com
+                username: newusername
+      responses:
+        '200':
+          description: Profile updated successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          user:
+                            $ref: '#/components/schemas/User'
+                          message:
+                            type: string
+        '400':
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /auth/account:
+    delete:
+      tags:
+        - Authentication
+      summary: Delete account
+      description: Permanently delete user account
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Account deleted successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          message:
+                            type: string
+                          email:
+                            type: string
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /security/logs:
+    get:
+      tags:
+        - Security
+      summary: Get security logs
+      description: Get user's security audit logs
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 50
+          description: Number of logs to retrieve
+        - name: offset
+          in: query
+          schema:
+            type: integer
+            default: 0
+          description: Offset for pagination
+      responses:
+        '200':
+          description: Security logs retrieved
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          logs:
+                            type: array
+                            items:
+                              $ref: '#/components/schemas/SecurityLog'
+                          pagination:
+                            type: object
+                            properties:
+                              limit:
+                                type: integer
+                              offset:
+                                type: integer
+                              total:
+                                type: integer
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /security/stats:
+    get:
+      tags:
+        - Security
+      summary: Get security stats
+      description: Get security statistics and recommendations
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Security stats retrieved
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          stats:
+                            type: object
+                            properties:
+                              successfulLogins:
+                                type: integer
+                              failedLogins:
+                                type: integer
+                              suspiciousActivities:
+                                type: integer
+                              uniqueIpAddresses:
+                                type: integer
+                              lastLogin:
+                                type: string
+                                format: date-time
+                          recentIpAddresses:
+                            type: array
+                            items:
+                              type: object
+                              properties:
+                                ip_address:
+                                  type: string
+                                access_count:
+                                  type: integer
+                                last_access:
+                                  type: string
+                                  format: date-time
+                          recommendations:
+                            type: array
+                            items:
+                              type: string
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /security/activity:
+    get:
+      tags:
+        - Security
+      summary: Get recent activity
+      description: Get summary of recent security events
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: days
+          in: query
+          schema:
+            type: integer
+            default: 7
+          description: Number of days to look back
+      responses:
+        '200':
+          description: Recent activity retrieved
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          activity:
+                            type: array
+                            items:
+                              type: object
+                              properties:
+                                action:
+                                  type: string
+                                count:
+                                  type: string
+                                last_occurrence:
+                                  type: string
+                                  format: date-time
+                          period:
+                            type: string
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /security/suspicious:
+    get:
+      tags:
+        - Security
+      summary: Check suspicious activity
+      description: Check if there's any suspicious activity on the account
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Suspicious activity check result
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          suspicious:
+                            type: boolean
+                          reasons:
+                            type: array
+                            items:
+                              type: string
+                          timestamp:
+                            type: string
+                            format: date-time
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /security/password-reset:
+    post:
+      tags:
+        - Security
+      summary: Request password reset
+      description: Request a password reset token
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - email
+              properties:
+                email:
+                  type: string
+                  format: email
+              example:
+                email: user@example.com
+      responses:
+        '200':
+          description: Reset request processed
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          message:
+                            type: string
+        '429':
+          description: Too many requests
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /security/password-reset/confirm:
+    post:
+      tags:
+        - Security
+      summary: Reset password
+      description: Reset password using token
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - token
+                - newPassword
+              properties:
+                token:
+                  type: string
+                newPassword:
+                  type: string
+              example:
+                token: reset-token
+                newPassword: NewSecurePassword123!
+      responses:
+        '200':
+          description: Password reset successful
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          message:
+                            type: string
+        '400':
+          description: Invalid or expired token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /security/change-password:
+    post:
+      tags:
+        - Security
+      summary: Change password
+      description: Change password while logged in
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - currentPassword
+                - newPassword
+                - srpSalt
+                - srpVerifier
+              properties:
+                currentPassword:
+                  type: string
+                newPassword:
+                  type: string
+                srpSalt:
+                  type: string
+                srpVerifier:
+                  type: string
+              example:
+                currentPassword: CurrentPassword123!
+                newPassword: NewPassword123!
+                srpSalt: new-srp-salt
+                srpVerifier: new-srp-verifier
+      responses:
+        '200':
+          description: Password changed successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          message:
+                            type: string
+        '400':
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Unauthorized or incorrect current password
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /security/sessions:
+    get:
+      tags:
+        - Security
+      summary: Get active sessions
+      description: Get list of active sessions
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Active sessions retrieved
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          sessions:
+                            type: array
+                            items:
+                              type: object
+                              properties:
+                                id:
+                                  type: string
+                                current:
+                                  type: boolean
+                                ipAddress:
+                                  type: string
+                                userAgent:
+                                  type: string
+                                createdAt:
+                                  type: string
+                                  format: date-time
+                                expiresAt:
+                                  type: string
+                                  format: date-time
+                          total:
+                            type: integer
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /security/check-breach:
+    post:
+      tags:
+        - Security
+      summary: Check password breach
+      description: Check if a password has been found in data breaches
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - password
+              properties:
+                password:
+                  type: string
+              example:
+                password: password-to-check
+      responses:
+        '200':
+          description: Breach check result
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          breached:
+                            type: boolean
+                          count:
+                            type: integer
+                          message:
+                            type: string
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
